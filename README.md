@@ -12,6 +12,9 @@ bridge yalnızca tekrarlanan zincirleri tek çağrıya indirir.
 | `citation_export(log_path, fmt)` | isnad_word.py | Atıf günlüğünden RIS/CSL-JSON üretir (Zotero'ya File>Import elle yapılır). |
 | `yargi_makale_cek(sorgu, slug, document_id?, birim_adi?)` | Bedesten → makale | Karar markdown'ını `C:\dev\mcp\makale\documents\<slug>\` altına yazar + `config.json` üretir. |
 | `bridge_health()` | — | Bileşenlerin (Zotero, Shamela spawn, yargi import, isnad betiği) durumunu döndürür. |
+| `improvement_log(konu, tip, hedef, kaynak_tool, detay)` | — | İşlem sonunda tespit edilen eksiklik/hata/özellik fikrini `data/improvements.jsonl`'a kaydeder. |
+| `improvement_list(status, hedef)` | — | Açık/tüm kayıtları listeler. |
+| `improvement_resolve(id, durum)` | — | Kaydı yapıldı/iptal olarak kapatır. Düzeltme kararı orkestratördedir. |
 
 ## Mimari
 

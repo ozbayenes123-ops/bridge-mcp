@@ -14,6 +14,7 @@ from mcp.server.fastmcp import FastMCP
 from . import __version__
 from . import isnad
 from .shamela_client import ShamelaError, shamela_get_book, shamela_search_books
+from .improvements import ImprovementError, list_improvements, log_improvement, set_status
 from .zotero_bridge import get_zotero_client
 from .yargi_bridge import cek_ve_yaz
 
@@ -23,7 +24,10 @@ mcp = FastMCP(
         "Yerel MCP'ler arası köprü. citation_search/isnad_kunye Zotero+Shamela, "
         "yargi_makale_cek yargi+makale zincirlerini tek çağrıda çalıştırır. "
         "Bridge bağlı değilse skill'ler doğrudan zotero_/shamela_ tool'larıyla "
-        "çalışmaya devam eder."
+        "çalışmaya devam eder. İşlem sonunda somut bir eksiklik/hata/özellik "
+        "fikri tespit edilirse improvement_log ile kaydedilir; improvement_list "
+        "açık kayıtları gösterir, improvement_resolve yapıldı/iptal olarak "
+        "kapatır. Düzeltme kararı orkestratördedir; bridge kendi kodunu düzenlemez."
     ),
 )
 
@@ -225,6 +229,53 @@ async def yargi_makale_cek(
     return json.dumps(result, ensure_ascii=False, indent=2)
 
 
+# ---------------------------------------------------------------- improvement_log
+
+async def improvement_log(
+    konu: str,
+    tip: str = "eksik",
+    hedef: str = "bridge",
+    kaynak_tool: str = "",
+    detay: str = "",
+) -> str:
+    """Bir işlemde keşfedilen eksiklik/hata/özellik fikrini kalıcı kaydet.
+
+    tip: bug | eksik | ozellik | iyilestirme
+    hedef: bridge | shamela | yargi | makale | zotero | skill | diger
+    Kayıtlar improvement_list ile okunur; düzeltme bir sonraki oturumda
+    orkestratör tarafından yapılır. Sadece gerçek gözlemler kaydedilir,
+    varsayım/kurgu kaydedilmez.
+    """
+    try:
+        record = log_improvement(
+            konu=konu, tip=tip, hedef=hedef, kaynak_tool=kaynak_tool, detay=detay
+        )
+    except ImprovementError as exc:
+        return json.dumps({"error": str(exc)}, ensure_ascii=False)
+    return json.dumps(
+        {"logged": True, **record}, ensure_ascii=False, indent=2
+    )
+
+
+async def improvement_list(status: str = "acik", hedef: str = "") -> str:
+    """Açık (veya tüm) eksiklik/hata kayıtlarını listeler."""
+    if status not in ("acik", "yapildi", "iptal", "hepsi"):
+        return json.dumps({"error": "status 'acik'|'yapildi'|'iptal'|'hepsi' olmalı"}, ensure_ascii=False)
+    records = list_improvements(status="" if status == "hepsi" else status, hedef=hedef)
+    return json.dumps(
+        {"toplam": len(records), "kayitlar": records}, ensure_ascii=False, indent=2
+    )
+
+
+async def improvement_resolve(improvement_id: str, durum: str = "yapildi") -> str:
+    """Kayıt durumunu günceller (acik → yapildi/iptal)."""
+    try:
+        record = set_status(improvement_id, durum)
+    except ImprovementError as exc:
+        return json.dumps({"error": str(exc)}, ensure_ascii=False)
+    return json.dumps({"updated": record}, ensure_ascii=False, indent=2)
+
+
 # ---------------------------------------------------------------- kayıt
 
 async def bridge_health() -> str:
@@ -257,6 +308,9 @@ mcp.tool()(isnad_kunye)
 mcp.tool()(citation_export)
 mcp.tool()(yargi_makale_cek)
 mcp.tool()(bridge_health)
+mcp.tool()(improvement_log)
+mcp.tool()(improvement_list)
+mcp.tool()(improvement_resolve)
 
 
 def main() -> None:
