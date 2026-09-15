@@ -2,6 +2,9 @@
 
 - prepare: Word gerekmez; üstveri stdin'den verilir, 3 form JSON olarak döner.
 - export: atıf günlüğünden (JSONL) RIS/CSL-JSON üretir.
+
+Betik yolu ISNAD_WORD_SCRIPT ile geçilebilir; varsayılan, `commandcode-skills`
+kurulumunun beklenen konumudur.
 """
 
 import json
@@ -13,12 +16,16 @@ from typing import Any
 
 from . import __version__
 
-ISNAD_SCRIPT = Path(
-    os.environ.get(
-        "ISNAD_WORD_SCRIPT",
-        r"C:\Users\ozbayenes123-ops\.commandcode\skills\isnad-word\scripts\isnad_word.py",
-    )
+_DEFAULT_ISNAD_SCRIPT = (
+    Path.home()
+    / ".commandcode"
+    / "skills"
+    / "isnad-word"
+    / "scripts"
+    / "isnad_word.py"
 )
+
+ISNAD_SCRIPT = Path(os.environ.get("ISNAD_WORD_SCRIPT") or _DEFAULT_ISNAD_SCRIPT)
 
 
 class IsnadError(RuntimeError):

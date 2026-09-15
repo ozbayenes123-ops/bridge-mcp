@@ -5,6 +5,7 @@ makale belge köküne (documents/<slug>/) yazar.
 """
 
 import json
+import os
 import re
 import unicodedata
 from datetime import datetime
@@ -19,7 +20,10 @@ from bedesten_mcp_module.models import (
 from emsal_mcp_module.client import EmsalApiClient, EmsalRateLimited
 from emsal_mcp_module.models import EmsalSearchRequest
 
-MAKALE_DOCS = Path(r"C:\dev\mcp\makale\documents")
+MAKALE_DOCS = Path(
+    os.environ.get("MAKALE_DOCS")
+    or Path(__file__).resolve().parents[3] / "makale" / "documents"
+)
 
 DEFAULT_COURTS = [
     "YARGITAYKARARI",

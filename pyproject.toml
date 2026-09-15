@@ -1,6 +1,6 @@
 [project]
 name = "bridge-mcp"
-version = "0.1.0"
+version = "0.2.0"
 description = "Bridge MCP: birleşik tool'larla yerel MCP'leri (Zotero, Shamela, yargi, makale) birbirine bağlar"
 readme = "README.md"
 requires-python = ">=3.11"
