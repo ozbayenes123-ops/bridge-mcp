@@ -16,7 +16,7 @@ from . import isnad
 from .shamela_client import ShamelaError, shamela_get_book, shamela_search_books
 from .improvements import ImprovementError, list_improvements, log_improvement, set_status
 from .zotero_bridge import get_zotero_client
-from .yargi_bridge import cek_ve_yaz
+# yargi_bridge cagri aninda (tembel) import edilir: yargi-mcp kurulu olmayabilir
 
 mcp = FastMCP(
     "bridge",
@@ -213,6 +213,17 @@ async def yargi_makale_cek(
 ) -> str:
     """Bedesten'de karar arar, ilk (veya document_id ile seçilen) kararın
     markdown'ını makale documents/<slug>/ altına yazar."""
+    try:
+        from .yargi_bridge import cek_ve_yaz
+    except Exception as exc:
+        return json.dumps(
+            {
+                "error": f"yargi modulu yuklenemedi: {type(exc).__name__}: {exc}",
+                "hint": "yargi-mcp deposu kurulum kokunde mi ve YARGI_MCP_PATH dogru mu?",
+            },
+            ensure_ascii=False,
+        )
+
     try:
         result = await cek_ve_yaz(
             phrase=sorgu,
