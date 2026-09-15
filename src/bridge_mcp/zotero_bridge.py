@@ -10,9 +10,9 @@ import os
 from pathlib import Path
 from typing import Any
 
-ZOTERO_CLIENT_PATH = Path(
-    os.environ.get("ZOTERO_MCP_SRC", r"C:\dev\mcp\zotero-mcp-src")
-) / "zotero_mcp" / "client.py"
+from . import ZOTERO_MCP_SRC
+
+ZOTERO_CLIENT_PATH = Path(ZOTERO_MCP_SRC) / "zotero_mcp" / "client.py"
 
 _module: Any = None
 
