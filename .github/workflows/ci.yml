@@ -1,0 +1,19 @@
+name: ci
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  import-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Bagimliliklari kur
+        run: uv sync
+      - name: Paket import edilebiliyor mu
+        run: uv run --no-sync python -c "import bridge_mcp; print('bridge_mcp', bridge_mcp.__version__)"
+      - name: Girdi noktasi yuklenebiliyor mu
+        run: uv run --no-sync python -c "import bridge_mcp.server; print('server modulu ok')"
