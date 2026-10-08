@@ -66,3 +66,7 @@ rate-limit bütçesi paylaşılır; gerekirse `BEDESTEN_RATE_*` ile yavaşlatın
 - Shamela, `shamela_client.py` üzerinden her çağrıda taze bir MCP stdio
   oturumu açar.
 - Bridge karar vermez: hangi kaynağın kullanılacağını orkestratör (LLM) seçer.
+
+## İlişkili skill'ler
+
+- `skills/isnad/`, `skills/isnad-atiyaz/`, `skills/isnad-kunye/`, `skills/isnad-word/` — İSNAD atıf sistemi zinciri (bridge `isnad_kunye` tool'uyla birlikte çalışır).
