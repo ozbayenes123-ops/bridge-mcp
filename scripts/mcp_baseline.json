@@ -1,0 +1,20 @@
+{
+  "_meta": {
+    "generated_at": "2026-10-10T10:31:12+00:00",
+    "note": "Expected MCP tool counts measured live via 'hermes mcp test'. Regenerate with: python scripts/check_mcp_drift.py --update",
+    "hermes_version": "Hermes Agent v0.21.5+8107.gaa30e02 (2026.9.24) · upstream dce1e9b3"
+  },
+  "servers": {
+    "bridge": 13,
+    "chatcut": 57,
+    "context7": 2,
+    "filesystem": 14,
+    "github": 26,
+    "hyperframes-local": 9,
+    "makale": 36,
+    "notion": 49,
+    "shamela": 34,
+    "yargi": 53,
+    "zotero": 33
+  }
+}

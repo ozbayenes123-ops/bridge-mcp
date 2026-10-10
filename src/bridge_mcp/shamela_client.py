@@ -81,7 +81,42 @@ async def shamela_get_book(book_id: int) -> Any:
     )
 
 
-async def shamela_search_pages(query: str, limit: int = 5) -> Any:
+async def shamela_search_pages(
+    query: str, limit: int = 5, options: dict[str, Any] | None = None
+) -> Any:
+    """Sayfa araması. Şemadaki morphology gibi seçenekler `options` ile geçilir."""
+    args: dict[str, Any] = {"query": query, "limit": limit, "response_format": "json"}
+    if options:
+        args["options"] = options
+    return await shamela_call("shamela_search_pages", args)
+
+
+async def shamela_get_page(book_id: int, page_id: int, keep_html: bool = False) -> Any:
+    """Tek sayfayı getirir.
+
+    Dikkat: `page_id` Şamile'nin iç (Lucene/SQLite) sayfa kimliğidir;
+    basılı sayfa numarası değildir. Basılı numaradan gitmek için
+    shamela_search_pages sonucundaki page_id kullanılır.
+    """
     return await shamela_call(
-        "shamela_search_pages", {"query": query, "limit": limit}
+        "shamela_get_page",
+        {"book_id": book_id, "page_id": page_id, "keep_html": keep_html},
     )
+
+
+async def shamela_get_citation(
+    book_id: int, page_id: int = 0, text: str = ""
+) -> Any:
+    args: dict[str, Any] = {"book_id": book_id, "response_format": "json"}
+    if page_id:
+        args["page_id"] = page_id
+    if text:
+        args["text"] = text
+    return await shamela_call("shamela_get_citation", args)
+
+
+async def shamela_verify_quote(quote: str, book_id: int, page_id: int = 0) -> Any:
+    args: dict[str, Any] = {"quote": quote, "book_id": book_id, "response_format": "json"}
+    if page_id:
+        args["page_id"] = page_id
+    return await shamela_call("shamela_verify_quote", args)

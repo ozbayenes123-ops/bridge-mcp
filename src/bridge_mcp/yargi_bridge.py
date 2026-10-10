@@ -5,11 +5,7 @@ makale belge köküne (documents/<slug>/) yazar.
 """
 
 import json
-import os
-import re
-import unicodedata
 from datetime import datetime
-from pathlib import Path
 from typing import Any
 
 from bedesten_mcp_module.client import BedestenApiClient, BedestenRateLimited
@@ -20,10 +16,7 @@ from bedesten_mcp_module.models import (
 from emsal_mcp_module.client import EmsalApiClient, EmsalRateLimited
 from emsal_mcp_module.models import EmsalSearchRequest
 
-MAKALE_DOCS = Path(
-    os.environ.get("MAKALE_DOCS")
-    or Path(__file__).resolve().parents[3] / "makale" / "documents"
-)
+from .makale_docs import MAKALE_DOCS, slugify
 
 DEFAULT_COURTS = [
     "YARGITAYKARARI",
@@ -36,13 +29,6 @@ DEFAULT_COURTS = [
 
 class YargiBridgeError(RuntimeError):
     pass
-
-
-def slugify(text: str, fallback: str = "karar") -> str:
-    text = unicodedata.normalize("NFKD", text)
-    text = text.encode("ascii", "ignore").decode("ascii").lower()
-    text = re.sub(r"[^a-z0-9]+", "-", text).strip("-")
-    return text[:48] or fallback
 
 
 async def bedesten_search(

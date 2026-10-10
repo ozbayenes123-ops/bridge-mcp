@@ -4,6 +4,7 @@ Kurulumdaki diğer sunucuların kaynak kodları sys.path ile import edilir.
 Varsayılan yollar bu deponun kardeş dizinleridir; hepsi ortam değişkeniyle
 geçilebilir:
   YARGI_MCP_PATH        (varsayılan: <kurulum kökü>/yargi-mcp)
+  MAKALE_PATH           (varsayılan: <kurulum kökü>/makale)
   ZOTERO_MCP_SRC        (varsayılan: <kurulum kökü>/zotero-mcp-src)
   SHAMELA_ENTRY         (varsayılan: <kurulum kökü>/shamela-mcp/dist/index.js)
   SHAMELA_COMMAND       (varsayılan: node)
@@ -45,6 +46,7 @@ def _java() -> str | None:
 
 
 YARGI_MCP_PATH = _path_env("YARGI_MCP_PATH", _INSTALL_ROOT / "yargi-mcp")
+MAKALE_PATH = _path_env("MAKALE_PATH", _INSTALL_ROOT / "makale")
 ZOTERO_MCP_SRC = _path_env("ZOTERO_MCP_SRC", _INSTALL_ROOT / "zotero-mcp-src")
 SHAMELA_COMMAND = os.environ.get("SHAMELA_COMMAND", "node")
 SHAMELA_ARGS = [

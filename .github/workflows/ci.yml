@@ -17,3 +17,5 @@ jobs:
         run: uv run --no-sync python -c "import bridge_mcp; print('bridge_mcp', bridge_mcp.__version__)"
       - name: Girdi noktasi yuklenebiliyor mu
         run: uv run --no-sync python -c "import bridge_mcp.server; print('server modulu ok')"
+      - name: Testler
+        run: uv run --no-sync --with pytest pytest -q
