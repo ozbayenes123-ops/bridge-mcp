@@ -420,29 +420,54 @@ def iter_fields(paragraph: ET.Element) -> Iterator[FieldMatch]:
             result += _run_text(run)
 
 
-def _make_run(text: str) -> ET.Element:
+DEFAULT_FONT = "Times New Roman"
+
+
+def _font_rpr(font: str = DEFAULT_FONT, size_half: int | None = None) -> ET.Element:
+    """Koşu özellikleri: yazı tipini AÇIKÇA yaz (kalıtıma bırakma).
+
+    Kalıtıma bırakılırsa Word belgenin varsayılan yazı tipini (ör. Calibri)
+    kullanır ve atıf/dipnot görünümü istenen biçimde olmaz.
+    """
+    rpr = ET.Element(f"{W}rPr")
+    fonts = ET.SubElement(rpr, f"{W}rFonts")
+    for attr in ("ascii", "hAnsi", "cs", "eastAsia"):
+        fonts.set(f"{W}{attr}", font)
+    if size_half:
+        ET.SubElement(rpr, f"{W}sz").set(f"{W}val", str(size_half))
+        ET.SubElement(rpr, f"{W}szCs").set(f"{W}val", str(size_half))
+    return rpr
+
+
+def _make_run(text: str, font: str = DEFAULT_FONT) -> ET.Element:
     run = ET.Element(f"{W}r")
+    run.append(_font_rpr(font))
     node = ET.SubElement(run, f"{W}t")
     node.set(XML_SPACE, "preserve")
     node.text = text
     return run
 
 
-def make_field_runs(instruction: str, result_text: str) -> list[ET.Element]:
+def make_field_runs(
+    instruction: str, result_text: str, font: str = DEFAULT_FONT
+) -> list[ET.Element]:
     """begin → instrText → separate → sonuç → end koşu dizisini üretir."""
     runs: list[ET.Element] = []
 
     begin = ET.Element(f"{W}r")
+    begin.append(_font_rpr(font))
     ET.SubElement(begin, f"{W}fldChar").set(f"{W}fldCharType", "begin")
     runs.append(begin)
 
     instr_run = ET.Element(f"{W}r")
+    instr_run.append(_font_rpr(font))
     instr = ET.SubElement(instr_run, f"{W}instrText")
     instr.set(XML_SPACE, "preserve")
     instr.text = instruction
     runs.append(instr_run)
 
     separate = ET.Element(f"{W}r")
+    separate.append(_font_rpr(font))
     ET.SubElement(separate, f"{W}fldChar").set(f"{W}fldCharType", "separate")
     runs.append(separate)
 
@@ -450,9 +475,10 @@ def make_field_runs(instruction: str, result_text: str) -> list[ET.Element]:
     # separate→end). Boş sonuç koşusu Word/eklenti tarafında alan okumayı
     # bozabildiği için sonuç metni varsa yazılır.
     if result_text:
-        runs.append(_make_run(result_text))
+        runs.append(_make_run(result_text, font))
 
     end = ET.Element(f"{W}r")
+    end.append(_font_rpr(font))
     ET.SubElement(end, f"{W}fldChar").set(f"{W}fldCharType", "end")
     runs.append(end)
     return runs
@@ -596,25 +622,29 @@ class DocxPackage:
                 return index
         return len(children)
 
-    def append_field(self, instruction: str, result_text: str) -> int:
-        paragraph = self._new_paragraph(make_field_runs(instruction, result_text))
+    def append_field(
+        self, instruction: str, result_text: str, font: str = DEFAULT_FONT
+    ) -> int:
+        paragraph = self._new_paragraph(make_field_runs(instruction, result_text, font))
         index = self._insert_index()
         self.body.insert(index, paragraph)
         return index
 
-    def prepend_field(self, instruction: str, result_text: str) -> int:
+    def prepend_field(
+        self, instruction: str, result_text: str, font: str = DEFAULT_FONT
+    ) -> int:
         """Alanı belgenin BAŞINA ekler.
 
         Zotero'nun Word eklentisi belge verisini (ZOTERO_PREF_* alanları) belge
         başında arar; sonda duran tercih alanları okunmaz ve Zotero "Belge
         Tercihleri" penceresini açmak zorunda kalır.
         """
-        paragraph = self._new_paragraph(make_field_runs(instruction, result_text))
+        paragraph = self._new_paragraph(make_field_runs(instruction, result_text, font))
         self.body.insert(0, paragraph)
         return 0
 
     def replace_marker(
-        self, marker: str, instruction: str, result_text: str
+        self, marker: str, instruction: str, result_text: str, font: str = DEFAULT_FONT
     ) -> bool:
         """`marker` metnini bulunduğu yerde alan koduyla değiştirir."""
         for paragraph in self.paragraphs():
@@ -625,11 +655,11 @@ class DocxPackage:
                 before, _, after = node.text.partition(marker)
                 node.text = before or None
                 position = list(paragraph).index(run)
-                field_runs = make_field_runs(instruction, result_text)
+                field_runs = make_field_runs(instruction, result_text, font)
                 for offset, field_run in enumerate(field_runs):
                     paragraph.insert(position + 1 + offset, field_run)
                 if after:
-                    paragraph.insert(position + 1 + len(field_runs), _make_run(after))
+                    paragraph.insert(position + 1 + len(field_runs), _make_run(after, font))
                 return True
         return False
 
@@ -774,12 +804,12 @@ class DocxPackage:
         return (max(ids) + 1) if ids else 1
 
     def _footnote_element(
-        self, fid: int, instruction: str, result_text: str
+        self, fid: int, instruction: str, result_text: str, font: str = DEFAULT_FONT
     ) -> ET.Element:
         """Dipnot gövdesi: numara işareti (footnoteRef) + atıf alanı.
 
-        Numara işareti olmadan Word dipnot numarasını göstermez ve atıf
-        elle yazılmış gibi görünür.
+        Numara işareti olmadan Word dipnot numarasını göstermez, yazı tipi
+        açıkça yazılmazsa belgenin varsayılanına düşer.
         """
         node = ET.Element(f"{W}footnote")
         node.set(f"{W}id", str(fid))
@@ -787,23 +817,26 @@ class DocxPackage:
         ppr = ET.SubElement(paragraph, f"{W}pPr")
         style = ET.SubElement(ppr, f"{W}pStyle")
         style.set(f"{W}val", self._style_id_for("text"))
+        ppr.append(_font_rpr(font, size_half=20))
 
         number_run = ET.SubElement(paragraph, f"{W}r")
         number_rpr = ET.SubElement(number_run, f"{W}rPr")
         number_style = ET.SubElement(number_rpr, f"{W}rStyle")
         number_style.set(f"{W}val", self._style_id_for("reference"))
+        number_rpr.append(_font_rpr(font))
         ET.SubElement(number_run, f"{W}footnoteRef")
-        paragraph.append(_make_run(" "))
+        paragraph.append(_make_run(" ", font))
 
-        for run in make_field_runs(instruction, result_text):
+        for run in make_field_runs(instruction, result_text, font):
             paragraph.append(run)
         return node
 
-    def _footnote_reference_run(self, fid: int) -> ET.Element:
+    def _footnote_reference_run(self, fid: int, font: str = DEFAULT_FONT) -> ET.Element:
         run = ET.Element(f"{W}r")
         rpr = ET.SubElement(run, f"{W}rPr")
         style = ET.SubElement(rpr, f"{W}rStyle")
         style.set(f"{W}val", self._style_id_for("reference"))
+        rpr.append(_font_rpr(font))
         ref = ET.SubElement(run, f"{W}footnoteReference")
         ref.set(f"{W}id", str(fid))
         return run
@@ -818,8 +851,13 @@ class DocxPackage:
     def next_footnote_id(self) -> int:
         return self._next_footnote_id()
 
-    def ensure_styles_part(self) -> ET.Element:
-        """FootnoteReference/FootnoteText stillerini bulur, yoksa ekler."""
+    def ensure_styles_part(self, font: str = DEFAULT_FONT) -> ET.Element:
+        """FootnoteReference/FootnoteText stillerini bulur, yoksa ekler.
+
+        Var olan (ör. Türkçe Word'ün `DipnotMetni`/`DipnotBavurusu`) dipnot
+        stillerinin yazı tipi de istenen yazı tipine çekilir: atıf görünümü
+        belgenin varsayılan yazı tipinden bağımsız olmalı.
+        """
         raw = self._part_bytes(STYLES_PART)
         if raw is None:
             root = ET.Element(f"{W}styles")
@@ -828,29 +866,56 @@ class DocxPackage:
         else:
             root = ET.fromstring(raw)
         existing = {s.get(f"{W}styleId") for s in root.findall(f"{W}style")}
-        names = {
-            (s.find(f"{W}name").get(f"{W}val") or "").strip().lower()
+        named = {
+            (s.find(f"{W}name").get(f"{W}val") or "").strip().lower(): s
             for s in root.findall(f"{W}style")
             if s.find(f"{W}name") is not None
         }
 
-        if "FootnoteReference" not in existing and "footnote reference" not in names:
-            style = ET.SubElement(root, f"{W}style")
-            style.set(f"{W}type", "character")
-            style.set(f"{W}styleId", "FootnoteReference")
-            ET.SubElement(style, f"{W}name").set(f"{W}val", "footnote reference")
-            rpr = ET.SubElement(style, f"{W}rPr")
-            ET.SubElement(rpr, f"{W}vertAlign").set(f"{W}val", "superscript")
+        def _set_font(style: ET.Element) -> None:
+            rpr = style.find(f"{W}rPr")
+            if rpr is None:
+                rpr = ET.SubElement(style, f"{W}rPr")
+            fonts = rpr.find(f"{W}rFonts")
+            if fonts is None:
+                fonts = ET.Element(f"{W}rFonts")
+                rpr.insert(0, fonts)
+            for attr in ("ascii", "hAnsi", "cs", "eastAsia"):
+                fonts.set(f"{W}{attr}", font)
 
-        if "FootnoteText" not in existing and "footnote text" not in names:
-            style = ET.SubElement(root, f"{W}style")
-            style.set(f"{W}type", "paragraph")
-            style.set(f"{W}styleId", "FootnoteText")
-            ET.SubElement(style, f"{W}name").set(f"{W}val", "footnote text")
-            ppr = ET.SubElement(style, f"{W}pPr")
-            ET.SubElement(ppr, f"{W}spacing").set(f"{W}after", "0")
-            rpr = ET.SubElement(style, f"{W}rPr")
-            ET.SubElement(rpr, f"{W}sz").set(f"{W}val", "20")
+        if "FootnoteReference" not in existing:
+            if "footnote reference" in named:
+                _set_font(named["footnote reference"])
+            else:
+                style = ET.SubElement(root, f"{W}style")
+                style.set(f"{W}type", "character")
+                style.set(f"{W}styleId", "FootnoteReference")
+                ET.SubElement(style, f"{W}name").set(f"{W}val", "footnote reference")
+                rpr = ET.SubElement(style, f"{W}rPr")
+                ET.SubElement(rpr, f"{W}vertAlign").set(f"{W}val", "superscript")
+                _set_font(style)
+        elif "FootnoteReference" in existing:
+            for style in root.findall(f"{W}style"):
+                if style.get(f"{W}styleId") == "FootnoteReference":
+                    _set_font(style)
+
+        if "FootnoteText" not in existing:
+            if "footnote text" in named:
+                _set_font(named["footnote text"])
+            else:
+                style = ET.SubElement(root, f"{W}style")
+                style.set(f"{W}type", "paragraph")
+                style.set(f"{W}styleId", "FootnoteText")
+                ET.SubElement(style, f"{W}name").set(f"{W}val", "footnote text")
+                ppr = ET.SubElement(style, f"{W}pPr")
+                ET.SubElement(ppr, f"{W}spacing").set(f"{W}after", "0")
+                rpr = ET.SubElement(style, f"{W}rPr")
+                ET.SubElement(rpr, f"{W}sz").set(f"{W}val", "20")
+                _set_font(style)
+        elif "FootnoteText" in existing:
+            for style in root.findall(f"{W}style"):
+                if style.get(f"{W}styleId") == "FootnoteText":
+                    _set_font(style)
 
         self._extra[STYLES_PART] = ET.tostring(
             root, encoding="UTF-8", xml_declaration=True
@@ -881,12 +946,18 @@ class DocxPackage:
         return root
 
     def add_footnote(
-        self, fid: int, instruction: str, result_text: str, marker: str = ""
+        self,
+        fid: int,
+        instruction: str,
+        result_text: str,
+        marker: str = "",
+        font: str = DEFAULT_FONT,
     ) -> bool:
         """Kimliği verilen dipnotu ekler; `marker` varsa o noktaya referans koyar.
 
-        Numara işareti (footnoteRef) ve dipnot stilleri de yazılır; aksi halde
-        Word numarayı göstermez ve atıf elle yazılmış gibi görünür.
+        Numara işareti (footnoteRef), dipnot stilleri ve yazı tipi yazılır;
+        aksi halde Word numarayı göstermez ya da yazı tipi belgenin
+        varsayılanına düşer.
         """
         target: tuple[ET.Element, ET.Element] | None = None
         if marker:
@@ -901,15 +972,15 @@ class DocxPackage:
             if target is None:
                 return False
 
-        self.ensure_styles_part()
+        self.ensure_styles_part(font)
         self.ensure_settings_part()
         self.ensure_footnotes_part().append(
-            self._footnote_element(fid, instruction, result_text)
+            self._footnote_element(fid, instruction, result_text, font)
         )
 
         if target is None:
             paragraph = ET.Element(f"{W}p")
-            paragraph.append(self._footnote_reference_run(fid))
+            paragraph.append(self._footnote_reference_run(fid, font))
             self.body.insert(self._insert_index(), paragraph)
             return True
 
@@ -918,14 +989,16 @@ class DocxPackage:
         before, _, after = node.text.partition(marker)
         node.text = before or None
         position = list(paragraph).index(run)
-        paragraph.insert(position + 1, self._footnote_reference_run(fid))
+        paragraph.insert(position + 1, self._footnote_reference_run(fid, font))
         if after:
-            paragraph.insert(position + 2, _make_run(after))
+            paragraph.insert(position + 2, _make_run(after, font))
         return True
 
-    def add_footnote_at_end(self, instruction: str, result_text: str) -> int:
+    def add_footnote_at_end(
+        self, instruction: str, result_text: str, font: str = DEFAULT_FONT
+    ) -> int:
         fid = self.next_footnote_id()
-        self.add_footnote(fid, instruction, result_text)
+        self.add_footnote(fid, instruction, result_text, font=font)
         return fid
 
     def footnote_fields(self) -> list[FieldMatch]:

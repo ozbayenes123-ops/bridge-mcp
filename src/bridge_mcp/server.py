@@ -932,6 +932,7 @@ async def zotero_word_atif(
     locator: str = "",
     stil: str = "",
     atif_tipi: str = "dipnot",
+    yazi_tipi: str = "Times New Roman",
     bibliyografya: bool = False,
     stil_ayarla: bool = True,
     yedek: bool = True,
@@ -1043,30 +1044,37 @@ async def zotero_word_atif(
         uyarilar: list[str] = []
         if dipnot_modu:
             if isaret_var:
-                yerlesti = pkg.add_footnote(fid, instruction, formatted, marker=konum_temiz)
+                yerlesti = pkg.add_footnote(
+                    fid, instruction, formatted, marker=konum_temiz, font=yazi_tipi
+                )
                 if not yerlesti:
                     uyarilar.append(
                         f"işaret bulunamadı ('{konum_temiz}'); dipnot belge sonuna eklendi"
                     )
-                    yerlesti = pkg.add_footnote(fid, instruction, formatted)
+                    yerlesti = pkg.add_footnote(
+                        fid, instruction, formatted, font=yazi_tipi
+                    )
             else:
-                yerlesti = pkg.add_footnote(fid, instruction, formatted)
+                yerlesti = pkg.add_footnote(fid, instruction, formatted, font=yazi_tipi)
         else:
             yerlesti = False
             if isaret_var:
-                yerlesti = pkg.replace_marker(konum_temiz, instruction, formatted)
+                yerlesti = pkg.replace_marker(
+                    konum_temiz, instruction, formatted, font=yazi_tipi
+                )
                 if not yerlesti:
                     uyarilar.append(
                         f"işaret bulunamadı ('{konum_temiz}'); atıf belge sonuna eklendi"
                     )
             if not yerlesti:
-                pkg.append_field(instruction, formatted)
+                pkg.append_field(instruction, formatted, yazi_tipi)
 
         bib_written = False
         if bibliyografya:
             pkg.append_field(
                 bibliography_instruction(),
                 "\n".join(t for t in kaynakca_texts if t),
+                yazi_tipi,
             )
             bib_written = True
 
@@ -1083,6 +1091,7 @@ async def zotero_word_atif(
                 "konum": "belge_sonu" if not yerlesti else konum_temiz,
                 "atif_yeri": "dipnot" if dipnot_modu else "metin_ici",
                 "dipnot_no": fid or None,
+                "yazi_tipi": yazi_tipi,
                 "gorunen_metin": formatted,
                 "stil_alani_yazildi": prefs_adet,
                 "stil": stil,

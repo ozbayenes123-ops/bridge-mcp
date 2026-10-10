@@ -195,13 +195,42 @@ def test_docx_rejects_non_docx(tmp_path):
 
 def test_field_without_result_has_no_result_run():
     """Zotero tercih alanlarında sonuç koşusu yoktur; boş sonuç koşusu eklenmez."""
+    def tags_of(runs):
+        return [
+            child.tag.split("}")[-1]
+            for run in runs
+            for child in run
+            if child.tag.split("}")[-1] != "rPr"
+        ]
+
     runs = make_field_runs(" ADDIN ZOTERO_PREF_1 {} ", "")
-    tags = [child.tag.split("}")[-1] for run in runs for child in run]
-    assert tags == ["fldChar", "instrText", "fldChar", "fldChar"]
+    assert tags_of(runs) == ["fldChar", "instrText", "fldChar", "fldChar"]
 
     runs_with_result = make_field_runs(" ADDIN ZOTERO_ITEM CSL_CITATION {} ", "Yazar, 2000.")
-    tags2 = [child.tag.split("}")[-1] for run in runs_with_result for child in run]
-    assert tags2 == ["fldChar", "instrText", "fldChar", "t", "fldChar"]
+    assert tags_of(runs_with_result) == [
+        "fldChar",
+        "instrText",
+        "fldChar",
+        "t",
+        "fldChar",
+    ]
+
+
+def test_runs_carry_explicit_font():
+    """Yazı tipi kalıtıma bırakılmaz; atıf/dipnot TNR yazılmalı."""
+    runs = make_field_runs(" ADDIN ZOTERO_ITEM CSL_CITATION {} ", "Yazar, 2000.")
+    for run in runs:
+        fonts = run.find(
+            "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}rPr/"
+            "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}rFonts"
+        )
+        assert fonts is not None, "koşuda rFonts yok"
+        assert (
+            fonts.get(
+                "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}ascii"
+            )
+            == "Times New Roman"
+        )
 
 
 def test_prefs_field_written_at_document_start(tmp_path):

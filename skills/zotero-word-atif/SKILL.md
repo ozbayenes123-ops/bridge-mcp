@@ -87,9 +87,12 @@ Zotero'nun Word eklentisi belgeyi "kendi belgesi" sayması için şunlar şart:
    kullanımı vardır. Testte ikinci dipnot "AlMajed, …" biçiminde (soyad önce)
    çıktı; **tam kısa başlık** için Zotero'da item'ın "Kısa Başlık" (Short Title)
    alanı doldurulmalıdır — CSL kısa başlık yoksa tam başlığa düşer.
-8. Yazı tipi: makale DOCX hattı Normal/Title/Heading/Dipnot stillerini
-   Times New Roman'a ayarlar; bridge'in eklediği dipnot stilleri yazı tipini
-   ezmez, belgeninkini devralır.
+8. Yazı tipi: atıf/dipnot koşularında yazı tipi AÇIKÇA yazılır (varsayılan
+   `yazi_tipi="Times New Roman"`), belgenin varsayılanına bırakılmaz; ayrıca
+   var olan dipnot stillerinin (ör. `DipnotMetni`) yazı tipi de TNR'ye çekilir.
+   Kalıtıma bırakılırsa Word "Aptos"/"Calibri" gösterir (ölçüldü: düzeltmeden
+   önce atıf metni 'Aptos', sonra 'Times New Roman'). makale DOCX hattı
+   Normal/Title/Heading/Dipnot stillerini zaten TNR'ye ayarlar.
 
 ## Dipnotlu / dipnotsuz üretim
 
