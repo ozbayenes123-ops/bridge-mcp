@@ -3,8 +3,10 @@
 - prepare: Word gerekmez; üstveri stdin'den verilir, 3 form JSON olarak döner.
 - export: atıf günlüğünden (JSONL) RIS/CSL-JSON üretir.
 
-Betik yolu ISNAD_WORD_SCRIPT ile geçilebilir; varsayılan, `commandcode-skills`
-kurulumunun beklenen konumudur.
+Betik yolu ISNAD_WORD_SCRIPT ile geçilebilir; varsayılan çözümleme sırası:
+Hermes ana skill'i (`<LOCALAPPDATA>/hermes/skills/research/isnad/scripts/`),
+ardından eski `commandcode-skills` konumu (fallback). isnad × 4 skill ailesi
+2026-10'da tek `isnad` skill'inde birleşti.
 """
 
 import json
@@ -16,16 +18,33 @@ from typing import Any
 
 from . import __version__
 
-_DEFAULT_ISNAD_SCRIPT = (
+_CANDIDATE_SCRIPTS = (
+    Path.home()
+    / "AppData"
+    / "Local"
+    / "hermes"
+    / "skills"
+    / "research"
+    / "isnad"
+    / "scripts"
+    / "isnad_word.py",
     Path.home()
     / ".commandcode"
     / "skills"
     / "isnad-word"
     / "scripts"
-    / "isnad_word.py"
+    / "isnad_word.py",
 )
 
-ISNAD_SCRIPT = Path(os.environ.get("ISNAD_WORD_SCRIPT") or _DEFAULT_ISNAD_SCRIPT)
+
+def _default_script() -> Path:
+    for candidate in _CANDIDATE_SCRIPTS:
+        if candidate.is_file():
+            return candidate
+    return _CANDIDATE_SCRIPTS[0]
+
+
+ISNAD_SCRIPT = Path(os.environ.get("ISNAD_WORD_SCRIPT") or _default_script())
 
 
 class IsnadError(RuntimeError):

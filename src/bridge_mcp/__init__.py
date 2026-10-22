@@ -10,7 +10,8 @@ geçilebilir:
   SHAMELA_COMMAND       (varsayılan: node)
   SHAMELA_INSTALL_ROOT  (Shamela 4 kökü; yoksa ayarlanmaz)
   SHAMELA_JRE           (java yolu; verilmezse PATH aranır)
-  ISNAD_WORD_SCRIPT     (varsayılan: ~/.commandcode/skills/isnad-word/scripts/isnad_word.py)
+  ISNAD_WORD_SCRIPT     (varsayılan: hermes skills/research/isnad/scripts/isnad_word.py;
+                         fallback ~/.commandcode/skills/isnad-word/scripts/isnad_word.py)
 """
 
 import os

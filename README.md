@@ -69,7 +69,7 @@ dizinleridir (yani `<KURULUM_KÖKÜ>` altındaki diğer MCP depoları).
 | `SHAMELA_COMMAND` | `node` | Shamela'yı çalıştıran komut |
 | `SHAMELA_INSTALL_ROOT` | `C:\shamela4` (varsa) | Shamela 4 kurulum kökü |
 | `SHAMELA_JRE` | PATH'teki `java` | Shamela'nın kullandığı Java yorumlayıcısı |
-| `ISNAD_WORD_SCRIPT` | `~/.commandcode/skills/isnad-word/scripts/isnad_word.py` | Kanonik İSNAD betiği |
+| `ISNAD_WORD_SCRIPT` | `<LOCALAPPDATA>/hermes/skills/research/isnad/scripts/isnad_word.py` (fallback: `~/.commandcode/skills/isnad-word/scripts/isnad_word.py`) | Kanonik İSNAD betiği |
 | `MAKALE_PATH` | `<kurulum kökü>/makale` | makale deposu (makale MCP sunucusu buradan çalıştırılır) |
 | `MAKALE_DOCS` | `<kurulum kökü>/makale/documents` | Zincirlerin yazdığı belge kökü |
 | `MAKALE_COMMAND` / `MAKALE_MCP_TIMEOUT_S` | `uv` / `300` | makale MCP sunucusunu başlatan komut ve çağrı süresi |
@@ -105,7 +105,9 @@ altındadır (daha önce testler CI'da hiç koşmuyordu).
 
 ## İlişkili skill'ler
 
-- `skills/isnad/`, `skills/isnad-atiyaz/`, `skills/isnad-kunye/`, `skills/isnad-word/` — İSNAD atıf sistemi zinciri (bridge `isnad_kunye` tool'uyla birlikte çalışır).
+- `skills/isnad/` — İSNAD atıf sistemi (künye üretimi + Word COM dipnot/kaynakça; eski
+  isnad-word / isnad-kunye / isnad-atiyaz üçlüsü 2026-10'da bu tek skill'de birleşti).
+  Bridge `isnad_kunye` tool'u aynı kanonik betiği kullanır.
 - `skills/zotero-word-atif/` — Word belgesine canlı Zotero atıfı yazma akışı
   (`zotero_word_atif` / `zotero_word_atif_listele`), dipnotlu/dipnotsuz üretim
   kuralları ve doğrulama adımları.

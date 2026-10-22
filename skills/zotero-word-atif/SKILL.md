@@ -5,7 +5,7 @@ version: 1.0.0
 metadata:
   hermes:
     tags: [zotero, word, citation, isnad, docx]
-    related_skills: [isnad, isnad-word, makale-translation]
+    related_skills: [isnad, makale-translation]
 ---
 
 # Zotero Word atıfı (canlı alan kodları)

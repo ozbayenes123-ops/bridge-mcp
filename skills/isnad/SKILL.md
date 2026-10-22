@@ -8,9 +8,9 @@ argument-hint: "<eser adı / Zotero item key> [atıf noktası: cümle] [sayfa] [
 
 Tek skill, iki iş: **(A)** Zotero'dan İSNAD 2. Edisyon künyesi üretmek,
 **(B)** açık Word belgesine COM (pywin32) ile dipnot + kaynakça olarak eklemek.
-Word MCP sunucusu yoktur; Word'e giden tek yol kanonik betiktir:
-`../isnad-word/scripts/isnad_word.py` (v2.0.0; bu dizindeki `scripts/isnad_word.py`
-yalnızca yönlendiricidir). Künye kaynağı Zotero MCP'dir
+Word MCP sunucusu gerekmez; Word'e giden kanonik betik bu dizindeki
+`scripts/isnad_word.py`'dir (v2.0.2; `python scripts\isnad_word.py --version` ile doğrula).
+Künye kaynağı Zotero MCP'dir
 (`zotero_search_items` → `zotero_item_metadata`).
 
 ## Kural kaynağı
@@ -27,28 +27,29 @@ tür şablonları ve Zotero alan eşlemesi orada. Emin olunmayan türde Zotero'd
 
 ## Araç seti (Word tarafı)
 
-Tek betik: `../isnad-word/scripts/isnad_word.py` (kanonik; ayrıntı `isnad-word` SKILL.md'de).
-Alt komutlar: `list`, `find`, `footnotes`, `cite`, `shortform`, `verify`, `fix`,
-`prepare`, `bibliography`, `addbib`, `export`. Çıktılar JSON'dur; okumadan ekleme yapma.
+Tek betik: `scripts/isnad_word.py`. Alt komutlar: `list`, `find`, `footnotes`, `insert`,
+`cite`, `shortform`, `verify`, `fix`, `prepare`, `bibliography`, `addbib`, `export`.
+Çıktılar JSON'dur; okumadan ekleme yapma.
 
 ```
-python "<kanonik>\isnad_word.py" list
-python "<kanonik>\isnad_word.py" --doc "Belge1" find "alıntının ayırt edici parçası"
-python "<kanonik>\isnad_word.py" footnotes --limit 50
-python "<kanonik>\isnad_word.py" prepare --meta-json meta.json --page "2/143" --save norm.json
-python "<kanonik>\isnad_word.py" cite --anchor "..." --page "2/143" \
+python scripts\isnad_word.py list [--doc "Belge1"]
+python scripts\isnad_word.py find "alıntının ayırt edici parçası"
+python scripts\isnad_word.py footnotes --limit 50
+python scripts\isnad_word.py insert --text "Gövde cümlesi."
+python scripts\isnad_word.py prepare --meta-json meta.json --page "2/143" --save norm.json
+python scripts\isnad_word.py cite --anchor "..." --page "2/143" \
   --item-key SP8BELED --surname "Saffâr" \
   --short-title "Telḫîṣü'l-edille" \
   --full "Ebû İshâk İbrâhim ez-Zâhid es-Saffâr, Telḫîṣü'l-edille li-ḳavâʿidi't-tevḥîd, thk. Angelika Brodersen (Beyrut: el-Ma'hedü'l-Almânî li'l-Ebhâsi'l-Şarkiyye, 1432/2011)" \
   --italic-title "Telḫîṣü'l-edille" --meta-json norm.json --log atif.jsonl
-python "<kanonik>\isnad_word.py" shortform 5 "Soyad, Kısa Başlık, 55."
-python "<kanonik>\isnad_word.py" verify
-python "<kanonik>\isnad_word.py" bibliography --log atif.jsonl
-python "<kanonik>\isnad_word.py" export --log atif.jsonl --format ris --out zotero_import.ris
+python scripts\isnad_word.py shortform 5 "Soyad, Kısa Başlık, 55."
+python scripts\isnad_word.py verify [--only FONT,SIZE] [--dry-run]
+python scripts\isnad_word.py fix [--only FONT,SIZE] [--dry-run]
+python scripts\isnad_word.py bibliography --log atif.jsonl
+python scripts\isnad_word.py addbib --text "Soyad, Ad. Eser. Yer: Yayınevi, Yıl." --italic-title "Eser"
+python scripts\isnad_word.py export --log atif.jsonl --format ris --out zotero_import.ris
 ```
 
-`<kanonik>` = `...\skills\isnad-word\scripts\isnad_word.py` (bu dizindeki
-`scripts\isnad_word.py` aynı betiğe yönlendirir; ikisini de kullanabilirsin).
 Çok adımlı işlerde
 betik çıktısını dosyaya yazdırıp `read_file` ile oku (konsol cp1254 Türkçe/özel harf
 sorunu çıkarabilir; betik stdout'u zaten UTF-8 sarmalar).
@@ -98,9 +99,11 @@ sorunu çıkarabilir; betik stdout'u zaten UTF-8 sarmalar).
 ## Kısa form karar mantığı (betik içinde gömülü)
 
 `cite` çalıştırıldığında betik tüm dipnotları tarar:
-- **Düz metin dipnotlar**: soyad + kısa başlığın ilk kelimesi metinde mi?
+- **Düz metin dipnotlar**: soyad + kısa başlığın ilk kelimesi metinde mi? (aksan/case
+duyarsız; `--search-extra` ek anahtar zorunlu kılar.)
 - **Zotero alan kodlu dipnotlar** (`ADDIN ZOTERO_ITEM`): alan kodundaki JSON'da item key
   veya yazar soyadı geçiyor mu?
+- **ISNAD alanlı dipnotlar** (`ADDIN ZOTERO_ITEM ISNAD`): gömülü `itemKey` eşleşiyor mu?
 
 Herhangi biri eşleşirse → `Soyad, Kısa Başlık, sayfa.`; hiçbiri yoksa → tam künye + sayfa.
 
@@ -112,12 +115,27 @@ kısalt (kullanıcıya sor). Ters yön (Zotero-önce → COM-sonra) otomatiktir.
 
 - Dipnotta parçalar `,` ile; sayfa `s.` harfsiz: `... 1432/2011), 2/143.`
 - Kısa form: `Soyad, Kısa Başlık, sayfa.` — `a.g.e./a.g.m.` yasak
-- Dipnot fontu: Times New Roman 10 punto (kullanıcı başkaca isterse `--font/--size`)
-- `after_text`/anchor bulunamazsa: metni kısaltıp yeniden dene (cümle sonu kelime)
+- Dipnot fontu: Times New Roman 10 punto (kullanıcı başkaca isterse `--font/--size`);
+  kaynakça varsayılan 12
+- Tarih yok → `ts.`; klasik eser → hicrî/milâdî çift yazım; 3+ yazar → ilk yazar + `vd.`;
+  iki yazar → araya boşluklu tire; yer/yayınevi yok → `b.y.`; URL sadece kaynakçada
+- Zotero **Short Title** her eserde doldurulmalı — kısa formun anahtarı; boşsa `prepare`
+  otomatik üretir ve uyarır
+- `after_text`/anchor bulunamazsa betik önce fuzzy, sonra sondan kısaltarak dener;
+  `anchor_method` alanını raporla, başarısızlıkta `suggestions` + `find` ile yeniden kur
 - Zotero'da eser yoksa: künyeyi kullanıcıdan al veya `shamela`/`web_search` ile doğrula;
   asla eksik alan uydurma
 - Kullanıcı metin-içi sistem istediyse dipnot ekleme — metin-içi künye paragrafın
   akışına gömülür; kullanıcıya `(Soyad, Yıl, s.)` metnini nereye koyacağını sor
+
+## Word MCP yolu (nadir — ancak kuruluysa)
+
+Bu makinede canlı-Word MCP **kurulu değil** (PyPI adayı `office-word-mcp-server`
+dosya-tabanlıdır; canlı-belge araçları yoktur — varsayılan yol her zaman COM'dur).
+`list_documents` / `find_text` / `insert_footnote` sunan bir MCP kurulursa: `find_text` →
+`insert_footnote(after_text=alıntının son kelimeleri, tırnak dahil)` →
+`set_footnote_font(TNR 10)`; dipnot ekledikçe numaralar kayar, listeyi yenile. Aynı
+belgede COM ile karışırsa `verify` ile tutarlılığı denetle.
 
 ## Çalışma örneği (doğrulanmış)
 
@@ -131,3 +149,7 @@ python scripts\isnad_word.py cite --anchor "erken döneme taşımıştır" --pag
 ```
 
 Beklenen çıktı: `"form": "KISA"`, `"inserted": "Saffâr, Telḫîṣü'l-edille, 2/145."`
+
+Sürüm geçmişi `CHANGELOG.md`'de; saf mantık `tests/test_isnad_pure.py` ile kilitli
+(çalıştırma: `uvx --with pytest pytest tests/` — Hermes venv'inde pytest yok).
+Kural değişikliğinde testi de güncelle.
